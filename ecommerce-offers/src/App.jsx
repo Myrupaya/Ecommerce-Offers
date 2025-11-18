@@ -19,16 +19,8 @@ const MAX_SUGGESTIONS = 50;
 const FALLBACK_IMAGE_BY_SITE = {
   amazon:
     "https://media.licdn.com/dms/image/v2/D4D12AQF083mMinXCtQ/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1686067344413?e=2147483647&v=beta&t=nm30MQ8OI-9VSUXR95shyABNZfOmt-f5f9R4zf9_yeU",
-  blinkit:
-    "https://yt3.googleusercontent.com/oe7za_pjcm3tYZKtTAs6aWuZCOzB6aHWnZOGYwrYjuZe72SMkVs3qoCElDQl-ob8CaKNimXI=s900-c-k-c0x00ffffff-no-rj",
-  croma:
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSuJw-G69osCWDOvabS4K8FjdfiepJ_9FdfA&s",
   flipkart:
     "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw",
-  instamart:
-    "https://static.businessworld.in/Swiggy%20Instamart%20Orange-20%20(1)_20240913021826_original_image_44.webp",
-  "reliance digital":
-    "https://cdn.shopify.com/s/files/1/0562/4011/1678/files/reliance-digital_logo.png?v=1708586249",
 };
 
 /** -------------------- HELPERS -------------------- */
@@ -325,9 +317,7 @@ const HotelOffers = () => {
       try {
         const files = [
           { name: "amazon.csv", setter: setAmazonOffers },
-          { name: "croma.csv", setter: setCromaOffers },
           { name: "flipkart.csv", setter: setFlipkartOffers },
-          { name: "reliance-digital.csv", setter: setRelianceOffers },
         ];
 
         await Promise.all(
@@ -552,19 +542,15 @@ const HotelOffers = () => {
 
   // matches
   const wAmazon = matchesFor(amazonOffers, "Amazon", selected?.type);
-  const wCroma = matchesFor(cromaOffers, "Croma", selected?.type);
   const wFlipkart = matchesFor(flipkartOffers, "Flipkart", selected?.type);
-  const wReliance = matchesFor(relianceOffers, "Reliance Digital", selected?.type);
 
   // dedup global
   const seen = new Set();
   const dAmazon = dedupWrappers(wAmazon, seen);
-  const dCroma = dedupWrappers(wCroma, seen);
   const dFlipkart = dedupWrappers(wFlipkart, seen);
-  const dReliance = dedupWrappers(wReliance, seen);
 
   const hasAny = Boolean(
-    dAmazon.length || dCroma.length || dFlipkart.length || dReliance.length
+    dAmazon.length || dFlipkart.length 
   );
 
   /** CI getter */
@@ -580,7 +566,7 @@ const HotelOffers = () => {
   /** Offer card UI (adjusted as per site) */
   const OfferCard = ({ wrapper }) => {
     const o = wrapper.offer;
-    const siteName = wrapper.site; // "Amazon" | "Croma" | "Flipkart" | "Reliance Digital"
+    const siteName = wrapper.site; 
 
     const csvOffer =
       getCI(o, "Offer") || firstField(o, LIST_FIELDS.title) || "Offer";
@@ -617,52 +603,6 @@ const HotelOffers = () => {
           {csvTnC}
         </div>
       );
-
-    if (siteName === "Croma") {
-      return (
-        <div className="offer-card">
-          {finalImg && (
-            <img
-              className={`offer-img ${usingFallback ? "is-fallback" : ""}`}
-              src={finalImg}
-              alt={csvOffer || "Offer"}
-              onError={(e) => handleImgError(e, siteName)}
-            />
-          )}
-          <div className="offer-info">
-            <h3 className="offer-title">{csvOffer}</h3>
-            {termsBox}
-            {csvLink && (
-              <button
-                className="btn"
-                onClick={() => window.open(csvLink, "_blank")}
-              >
-                View Offer
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (siteName === "Reliance Digital") {
-      return (
-        <div className="offer-card">
-          <div className="offer-info">
-            <h3 className="offer-title">{csvOffer}</h3>
-            {termsBox}
-            {csvLink && (
-              <button
-                className="btn"
-                onClick={() => window.open(csvLink, "_blank")}
-              >
-                View Offer
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
 
     // Amazon & Flipkart: show offer + scrollable T&C
     return (
@@ -891,17 +831,6 @@ const HotelOffers = () => {
             </div>
           )}
 
-          {!!dCroma.length && (
-            <div className="offer-group">
-              <h2 style={{ textAlign: "center" }}>Offers on Croma</h2>
-              <div className="offer-grid">
-                {dCroma.map((w, i) => (
-                  <OfferCard key={`croma-${i}`} wrapper={w} />
-                ))}
-              </div>
-            </div>
-          )}
-
           {!!dFlipkart.length && (
             <div className="offer-group">
               <h2 style={{ textAlign: "center" }}>Offers on Flipkart</h2>
@@ -912,17 +841,7 @@ const HotelOffers = () => {
               </div>
             </div>
           )}
-
-          {!!dReliance.length && (
-            <div className="offer-group">
-              <h2 style={{ textAlign: "center" }}>Offers on Reliance Digital</h2>
-              <div className="offer-grid">
-                {dReliance.map((w, i) => (
-                  <OfferCard key={`rel-${i}`} wrapper={w} />
-                ))}
-              </div>
-            </div>
-          )}
+          
         </div>
       )}
 
