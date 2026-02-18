@@ -7,6 +7,8 @@ import "./App.css";
 const LIST_FIELDS = {
   credit: ["Eligible Credit Cards", "Eligible Cards"],
   debit: ["Eligible Debit Cards", "Applicable Debit Cards"],
+  upi: ["UPI"],
+  netbanking: ["Net Banking"],
   title: ["Offer Title", "Title", "Offer"],
   image: ["Image", "Credit Card Image", "Offer Image"],
   link: ["Link", "Offer Link"],
@@ -21,6 +23,11 @@ const FALLBACK_IMAGE_BY_SITE = {
     "https://media.licdn.com/dms/image/v2/D4D12AQF083mMinXCtQ/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1686067344413?e=2147483647&v=beta&t=nm30MQ8OI-9VSUXR95shyABNZfOmt-f5f9R4zf9_yeU",
   flipkart:
     "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw",
+  croma:
+    "https://seeklogo.com/images/C/croma-logo-BC2399C3AE-seeklogo.com.png",
+  bookmyshow: "https://in.bmscdn.com/webin/common/icons/logo.svg",
+  "reliance-digital":
+    "https://yt3.ggpht.com/a-/AAuE7mC4wDUVKY-pGh9R1K57W8EkI2UcMR4X_txlPA=s900-mo-c-c0xffffffff-rj-k-no",
 };
 
 /** -------------------- HELPERS -------------------- */
@@ -241,10 +248,14 @@ const HotelOffers = () => {
   // dropdown data
   const [creditEntries, setCreditEntries] = useState([]);
   const [debitEntries, setDebitEntries] = useState([]);
+  const [upiEntries, setUpiEntries] = useState([]);
+  const [netBankingEntries, setNetBankingEntries] = useState([]);
 
   // marquee (built from offer CSVs)
   const [marqueeCC, setMarqueeCC] = useState([]);
   const [marqueeDC, setMarqueeDC] = useState([]);
+  const [marqueeUPI, setMarqueeUPI] = useState([]);
+  const [marqueeNetBanking, setMarqueeNetBanking] = useState([]);
 
   // ui state
   const [filteredCards, setFilteredCards] = useState([]);
@@ -277,6 +288,8 @@ const HotelOffers = () => {
 
         const creditMap = new Map();
         const debitMap = new Map();
+        const upiMap = new Map();
+        const netBankingMap = new Map();
 
         for (const row of rows) {
           const ccList = splitList(firstField(row, LIST_FIELDS.credit));
@@ -293,6 +306,21 @@ const HotelOffers = () => {
             if (baseNorm)
               debitMap.set(baseNorm, debitMap.get(baseNorm) || base);
           }
+
+          const upiList = splitList(firstField(row, LIST_FIELDS.upi));
+          for (const raw of upiList) {
+            const base = brandCanonicalize(getBase(raw));
+            const baseNorm = toNorm(base);
+            if (baseNorm) upiMap.set(baseNorm, upiMap.get(baseNorm) || base);
+          }
+
+          const nbList = splitList(firstField(row, LIST_FIELDS.netbanking));
+          for (const raw of nbList) {
+            const base = brandCanonicalize(getBase(raw));
+            const baseNorm = toNorm(base);
+            if (baseNorm)
+              netBankingMap.set(baseNorm, netBankingMap.get(baseNorm) || base);
+          }
         }
 
         const credit = Array.from(creditMap.values())
@@ -301,9 +329,17 @@ const HotelOffers = () => {
         const debit = Array.from(debitMap.values())
           .sort((a, b) => a.localeCompare(b))
           .map((d) => makeEntry(d, "debit"));
+        const upi = Array.from(upiMap.values())
+          .sort((a, b) => a.localeCompare(b))
+          .map((d) => makeEntry(d, "upi"));
+        const netBanking = Array.from(netBankingMap.values())
+          .sort((a, b) => a.localeCompare(b))
+          .map((d) => makeEntry(d, "netbanking"));
 
         setCreditEntries(credit);
         setDebitEntries(debit);
+        setUpiEntries(upi);
+        setNetBankingEntries(netBanking);
       } catch (e) {
         console.error("allCards.csv load error:", e);
       }
@@ -318,6 +354,8 @@ const HotelOffers = () => {
         const files = [
           { name: "amazon.csv", setter: setAmazonOffers },
           { name: "flipkart.csv", setter: setFlipkartOffers },
+          { name: "croma.csv", setter: setCromaOffers },
+          { name: "reliance-digital.csv", setter: setRelianceOffers },
         ];
 
         await Promise.all(
@@ -341,6 +379,8 @@ const HotelOffers = () => {
   useEffect(() => {
     const ccMap = new Map();
     const dcMap = new Map();
+    const upiMap = new Map();
+    const netBankingMap = new Map();
 
     const harvest = (rows) => {
       for (const o of rows || []) {
@@ -358,6 +398,21 @@ const HotelOffers = () => {
           const base = brandCanonicalize(getBase(raw));
           const baseNorm = toNorm(base);
           if (baseNorm) dcMap.set(baseNorm, dcMap.get(baseNorm) || base);
+        }
+
+        const upi = splitList(firstField(o, LIST_FIELDS.upi));
+        for (const raw of upi) {
+          const base = brandCanonicalize(getBase(raw));
+          const baseNorm = toNorm(base);
+          if (baseNorm) upiMap.set(baseNorm, upiMap.get(baseNorm) || base);
+        }
+
+        const netBanking = splitList(firstField(o, LIST_FIELDS.netbanking));
+        for (const raw of netBanking) {
+          const base = brandCanonicalize(getBase(raw));
+          const baseNorm = toNorm(base);
+          if (baseNorm)
+            netBankingMap.set(baseNorm, netBankingMap.get(baseNorm) || base);
         }
 
         const mixed = splitList(o["Eligible Cards"]);
@@ -384,6 +439,22 @@ const HotelOffers = () => {
     );
     setMarqueeDC(
       Array.from(dcMap.values()).sort((a, b) => a.localeCompare(b))
+    );
+    setMarqueeUPI(
+      Array.from(upiMap.values()).sort((a, b) => a.localeCompare(b))
+    );
+    setMarqueeNetBanking(
+      Array.from(netBankingMap.values()).sort((a, b) => a.localeCompare(b))
+    );
+    setUpiEntries(
+      Array.from(upiMap.values())
+        .sort((a, b) => a.localeCompare(b))
+        .map((d) => makeEntry(d, "upi"))
+    );
+    setNetBankingEntries(
+      Array.from(netBankingMap.values())
+        .sort((a, b) => a.localeCompare(b))
+        .map((d) => makeEntry(d, "netbanking"))
     );
   }, [amazonOffers, cromaOffers, flipkartOffers, relianceOffers]);
 
@@ -429,8 +500,10 @@ const HotelOffers = () => {
 
     let cc = scored(creditEntries);
     let dc = scored(debitEntries);
+    let upi = scored(upiEntries);
+    let netBanking = scored(netBankingEntries);
 
-    if (!cc.length && !dc.length) {
+    if (!cc.length && !dc.length && !upi.length && !netBanking.length) {
       setNoMatches(true);
       setSelected(null);
       setFilteredCards([]);
@@ -467,6 +540,8 @@ const HotelOffers = () => {
       };
       cc = reorderBySelect(cc);
       dc = reorderBySelect(dc);
+      upi = reorderBySelect(upi);
+      netBanking = reorderBySelect(netBanking);
     }
 
     // 🔹 Build final list: debit-first or credit-first
@@ -474,13 +549,16 @@ const HotelOffers = () => {
     const firstLabel = debitHint ? "Debit Cards" : "Credit Cards";
     const secondList = debitHint ? cc : dc;
     const secondLabel = debitHint ? "Credit Cards" : "Debit Cards";
-
     setNoMatches(false);
     setFilteredCards([
       ...(firstList.length ? [{ type: "heading", label: firstLabel }] : []),
       ...firstList,
       ...(secondList.length ? [{ type: "heading", label: secondLabel }] : []),
       ...secondList,
+      ...(upi.length ? [{ type: "heading", label: "UPI" }, ...upi] : []),
+      ...(netBanking.length
+        ? [{ type: "heading", label: "Net Banking" }, ...netBanking]
+        : []),
     ]);
   };
 
@@ -502,7 +580,11 @@ const HotelOffers = () => {
   };
 
   /** build wrappers */
-  function matchesFor(offers, site, selType /* 'credit' | 'debit' */) {
+  function matchesFor(
+    offers,
+    site,
+    selType /* 'credit' | 'debit' | 'upi' | 'netbanking' */
+  ) {
     if (!selected) return [];
     const out = [];
 
@@ -525,6 +607,10 @@ const HotelOffers = () => {
           }
           continue;
         }
+      } else if (selType === "upi") {
+        list = splitList(firstField(o, LIST_FIELDS.upi));
+      } else if (selType === "netbanking") {
+        list = splitList(firstField(o, LIST_FIELDS.netbanking));
       }
 
       for (const raw of list) {
@@ -542,15 +628,23 @@ const HotelOffers = () => {
 
   // matches
   const wAmazon = matchesFor(amazonOffers, "Amazon", selected?.type);
+  const wCroma = matchesFor(cromaOffers, "Croma", selected?.type);
   const wFlipkart = matchesFor(flipkartOffers, "Flipkart", selected?.type);
+  const wReliance = matchesFor(
+    relianceOffers,
+    "Reliance-Digital",
+    selected?.type
+  );
 
   // dedup global
   const seen = new Set();
   const dAmazon = dedupWrappers(wAmazon, seen);
+  const dCroma = dedupWrappers(wCroma, seen);
   const dFlipkart = dedupWrappers(wFlipkart, seen);
+  const dReliance = dedupWrappers(wReliance, seen);
 
   const hasAny = Boolean(
-    dAmazon.length || dFlipkart.length 
+    dAmazon.length || dCroma.length || dFlipkart.length || dReliance.length
   );
 
   /** CI getter */
@@ -604,12 +698,25 @@ const HotelOffers = () => {
         </div>
       );
 
-    // Amazon & Flipkart: show offer + scrollable T&C
+    // Show image with fallback support + offer + scrollable T&C
     return (
       <div className="offer-card">
+        {!!finalImg && (
+          <img
+            src={finalImg}
+            alt={`${siteName} offer`}
+            onError={(e) => handleImgError(e, siteName)}
+            className={`offer-img ${usingFallback ? "is-fallback" : ""}`}
+          />
+        )}
         <div className="offer-info">
           <h3 className="offer-title">{csvOffer}</h3>
           {termsBox}
+          {!!csvLink && (
+            <a href={csvLink} target="_blank" rel="noreferrer">
+              <button className="offer-btn">View Offer</button>
+            </a>
+          )}
         </div>
       </div>
     );
@@ -618,7 +725,10 @@ const HotelOffers = () => {
   return (
     <div className="App" style={{ fontFamily: "'Libre Baskerville', serif" }}>
       {/* Chips marquee from offers */}
-      {(marqueeCC.length > 0 || marqueeDC.length > 0) && (
+      {(marqueeCC.length > 0 ||
+        marqueeDC.length > 0 ||
+        marqueeUPI.length > 0 ||
+        marqueeNetBanking.length > 0) && (
         <div
           style={{
             maxWidth: 1200,
@@ -641,8 +751,8 @@ const HotelOffers = () => {
               gap: 8,
             }}
           >
-            <span>Credit And Debit Cards Which Have Offers</span>
-          </div>
+              <span>Cards / UPI / Net Banking Which Have Offers</span>
+            </div>
 
           {marqueeCC.length > 0 && (
             <marquee
@@ -733,6 +843,86 @@ const HotelOffers = () => {
               ))}
             </marquee>
           )}
+
+          {(marqueeUPI.length > 0 || marqueeNetBanking.length > 0) && (
+            <marquee
+              direction="left"
+              scrollamount="4"
+              style={{ marginTop: 8, whiteSpace: "nowrap" }}
+            >
+              <strong style={{ marginRight: 10, color: "#1F2D45" }}>
+                UPI/Net Banking:
+              </strong>
+              {marqueeUPI.map((name, idx) => (
+                <span
+                  key={`upi-chip-${idx}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleChipClick(name, "upi")}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" ? handleChipClick(name, "upi") : null
+                  }
+                  style={{
+                    display: "inline-block",
+                    padding: "6px 10px",
+                    border: "1px solid #E0E6EE",
+                    borderRadius: 9999,
+                    marginRight: 8,
+                    background: "#fff",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    lineHeight: 1.2,
+                    userSelect: "none",
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#F0F5FF")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#fff")
+                  }
+                  title="Click to select this UPI option"
+                >
+                  {name}
+                </span>
+              ))}
+              {marqueeNetBanking.map((name, idx) => (
+                <span
+                  key={`nb-chip-${idx}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleChipClick(name, "netbanking")}
+                  onKeyDown={(e) =>
+                    e.key === "Enter"
+                      ? handleChipClick(name, "netbanking")
+                      : null
+                  }
+                  style={{
+                    display: "inline-block",
+                    padding: "6px 10px",
+                    border: "1px solid #E0E6EE",
+                    borderRadius: 9999,
+                    marginRight: 8,
+                    background: "#fff",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    lineHeight: 1.2,
+                    userSelect: "none",
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#F0F5FF")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#fff")
+                  }
+                  title="Click to select this Net Banking option"
+                >
+                  {name}
+                </span>
+              ))}
+            </marquee>
+          )}
         </div>
       )}
 
@@ -745,7 +935,7 @@ const HotelOffers = () => {
           type="text"
           value={query}
           onChange={onChangeQuery}
-          placeholder="Type a Credit or Debit Card...."
+          placeholder="Type Credit, Debit, UPI, or Net Banking...."
           className="dropdown-input"
           style={{
             width: "100%",
@@ -841,7 +1031,30 @@ const HotelOffers = () => {
               </div>
             </div>
           )}
-          
+
+          {!!dCroma.length && (
+            <div className="offer-group">
+              <h2 style={{ textAlign: "center" }}>Offers on Croma</h2>
+              <div className="offer-grid">
+                {dCroma.map((w, i) => (
+                  <OfferCard key={`croma-${i}`} wrapper={w} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!!dReliance.length && (
+            <div className="offer-group">
+              <h2 style={{ textAlign: "center" }}>
+                Offers on Reliance Digital
+              </h2>
+              <div className="offer-grid">
+                {dReliance.map((w, i) => (
+                  <OfferCard key={`rel-${i}`} wrapper={w} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
